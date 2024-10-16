@@ -5,6 +5,11 @@ local replace_map = {
   decrement = {},
 }
 
+local success, str_module = pcall(require, "lua-utf8")
+if not success then
+    str_module = string
+end
+
 M.generate = function(loop_list, allow_caps)
   for i = 1, #loop_list do
     local current = loop_list[i]
@@ -14,10 +19,10 @@ M.generate = function(loop_list, allow_caps)
     replace_map.decrement[next]    = current
 
     if allow_caps then
-      local capitalized_current = string.gsub(current, "^%l", string.upper)
-      local capitalized_next    = string.gsub(next,    "^%l", string.upper)
-      local all_caps_current    = string.upper(current)
-      local all_caps_next       = string.upper(next)
+      local capitalized_current = str_module.gsub(current, "^%l", str_module.upper)
+      local capitalized_next    = str_module.gsub(next,    "^%l", str_module.upper)
+      local all_caps_current    = str_module.upper(current)
+      local all_caps_next       = str_module.upper(next)
 
       replace_map.increment[capitalized_current] = capitalized_next
       replace_map.decrement[capitalized_next]    = capitalized_current
@@ -326,35 +331,35 @@ function check_postion_word(words,target_position,target_word)
     --In lua tab space is %s other is %S
     --In vim cword won't contains ", different behavior with lua
     --we have to know char in column[0] is word or %s
-    i,j = string.find(words,"%S+");
+    i,j = str_module.find(words,"%S+");
     local position = 0;
-    if i==1 then 
+    if i==1 then
         position = j
         --Cursor in first word
         if position > target_position then
-            return string.find(words:sub(i,j), target_word)
+            return str_module.find(str_module.sub(words, i,j), target_word)
         end
     end
     -- split word with (space\tab)word
-    for word in string.gmatch(words,"%s+%S+") do
-        position = position + string.len(word)
-        local s_word = word:gsub("%s","")
+    for word in str_module.gmatch(words,"%s+%S+") do
+        position = position + str_module.len(word)
+        local s_word = str_module.gsub(word, "%s","")
         -- means target_position is in %s location no need to compare
-        if position - string.len(s_word) >= target_position then
+        if position - str_module.len(s_word) >= target_position then
             return false
         end
         if position > target_position then
-            return string.find(s_word, target_word)
+            return str_module.find(s_word, target_word)
         end
     end
     return false
 end
 
 function number_exist_in_word(line,current_column)
-  local space_after_cursor = string.find(line:sub(current_column + 1, string.len(line))," ")
+  local space_after_cursor = str_module.find(str_module.sub(line, current_column + 1, str_module.len(line))," ")
   if space_after_cursor and space_after_cursor>1 then
-      local word_after_cursor = line:sub(current_column+1,current_column + space_after_cursor)
-      if string.match(word_after_cursor,"%d") then
+      local word_after_cursor = str_module.sub(line, current_column+1,current_column + space_after_cursor)
+      if str_module.match(word_after_cursor,"%d") then
           return true
       end
   end
@@ -384,7 +389,7 @@ M.run = function(direction)
     end
 
     -- we only need check char in alpha and number
-    if string.find(line:sub(current_column+1, current_column+1),"[^][a-zA-Z0-9]") then
+    if str_module.find(str_module.sub(line, current_column+1, current_column+1),"[^][a-zA-Z0-9]") then
       if (current_column + 1) == vim.fn.strlen(line) then
         vim.api.nvim_win_set_cursor(0, start_position)
         return false
@@ -410,7 +415,7 @@ M.run = function(direction)
     if match then
       -- Are we on the first character of the word? If not, move there.
       -- If not first char compare current word is match or not
-      if cword:sub(1, 1) ~= line:sub(current_column + 1, current_column + 1) then
+      if str_module.sub(cword, 1, 1) ~= str_module.sub(line, current_column + 1, current_column + 1) then
         if check_postion_word(line,current_column, cword) then
           vim.cmd('normal! b')
         else
